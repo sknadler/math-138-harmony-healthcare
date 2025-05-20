@@ -1,0 +1,112 @@
+---
+title: ""
+author: ""
+date: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Harmony Healthcare - Feature Selection
+Hibah Arshad, Samantha Nadler, Thomas Walsh
+
+<br>
+
+**Problem Statement**
+
+This project's objective is to help Harmony HealthCare determine which patient characteristics are the most predictive of ER visits. By identifying which variables, like age, BMI, cholesterol, or chronic conditions, are most closely associated with emergency room visits, the organization can create more efficient methods to cut down on avoidable ER admissions. Patient education, preventative care programs, and customized health treatments are a few examples of these methods. It is our responsibility as student consultants to evaluate the data statistically and offer useful findings that can help in healthcare decision-making.
+
+Per Nigel Glynn et al. (2011), about 27% of patients who are admitted to the emergency room readmit themselves, usually within over a year after their initial visit. When considering factors that contribute to an admitted patient being more likely to return to the emergency room, Glynn et al. concluded that age played an important role in making such a determination. Readmitted patients were an average 67.2 years old, compared to all admitted patients being an average 57.8 years old.
+
+As for diagnoses, respiratory disorders (including severe asthma, bronchitis, pneumonia, and more recently COVID and RSV) were the most common among readmitted patients, taking 22% of readmission causes. Following were nervous disorders (including strokes and seizures) with 17.3% of readmissions, cardiovascular disorders (including heart attacks, heart failure, and hypertension) with 16.5%, and digestive disorders (including dehydration, severe abdominal pain, and IBS) with 11.5%. All in all chronic condtions is a true indicator someone will be readmitted into ER's. 
+
+**Data Visualization**
+
+The data was first sorted through and cleaned roughly by a Python script as the first part of the project was incomplete. The data visualization was then used to:
+
+- Show the distribution of ER readmission 
+- Show patient details, such as age and indicators of a chronic illness 
+- Show the LASSO model coefficient outputs to visualize the most predictive parameters (such as age, blood pressure, and A1C levels)
+
+The following code in R separates the response (y) and predictor (x) variables. It uses mean to deal with missing data. It uses cross-validation and `glmnet` for LASSO. The output selected characteristics and their coefficients.
+
+```{r}
+library(readr)
+#HH_Data <- read_csv("C:/Users/hibaharshad/Desktop/cleanedDataV2.csv")
+HH_Data <- read_csv("~/Desktop/cleanedDataV2.csv")
+head(HH_Data)
+```
+
+```{r}
+# Still run the following two lines
+library(tidyr)
+library(dplyr)
+
+# HH_Data$`ED Episode Admit Last 6 Mths` <- as.numeric(HH_Data$`ED Episode Admit Last 6 Mths`)
+# HH_Data <- HH_Data %>% replace_na(list(`ED Episode Admit Last 6 Mths` = 0))
+# 
+# # Remove columns with more than 50% missing values
+# col_missing <- colMeans(is.na(HH_Data))
+# HH_Data <- HH_Data[, names(HH_Data)[col_missing <= 0.5]]
+# 
+# # Remove rows with more than 10% missing values
+# row_missing <- rowMeans(is.na(HH_Data))
+# HH_Data <- HH_Data[row_missing <= 0.1, ]
+# 
+# # View the cleaned dataset
+# View(HH_Data)
+```
+
+```{r}
+y <- HH_Data$Admission
+x <- HH_Data %>%
+  select(where(is.numeric), -Admission) %>%
+  as.matrix()
+```
+
+```{r}
+library(glmnet)
+set.seed(42)
+
+lasso_model <- cv.glmnet(x, y, alpha = 1, family = "binomial")
+best_lambda <- lasso_model$lambda.min
+cat("Best lambda (from cross-validation): ", best_lambda, "\n")
+plot(lasso_model)
+```
+
+```{r}
+coef_lasso <- predict(lasso_model, type = "coefficients", s = best_lambda)
+coef_lasso_df <- as.data.frame(as.matrix(coef_lasso))
+colnames(coef_lasso_df) <- "coefficient"
+coef_lasso_df$feature <- rownames(coef_lasso_df)
+
+coef_lasso_df <- subset(coef_lasso_df)#, feature != "(Intercept)" & coefficient != 0)
+coef_lasso_df[order(abs(coef_lasso_df$coefficient), decreasing = TRUE), ][1:20, ]
+```
+
+**Are the Results Significant?**
+
+By reducing irrelevant variable coefficients to zero, LASSO regression produced a clear list of relevant predictors. Our model kept characteristics such as:
+
+- HCC Risk Score: Chronic Condition Risk
+- Active Medications
+- Missed Appointments
+- BMI
+- Mental Metrics
+- Covid 19 Vaccine Status
+
+The importance of these findings was supported by their consistency with published medical research on readmission risk. In order to prevent overfitting, we also employed cross-validation to determine the ideal lambda value.
+
+**Discussion**
+
+Our results were consistent with the background research. Higher ER use was linked to chronic illnesses. Research also showed that Covid 19 was a predictor. Social and mental variables, like depression from the lasso also had a moderate impact. We plan on looking into variables including a patient’s age for future research as for now the column was corrupted. 
+
+**Contributions**
+
+Thomas: Background Research, slides
+
+Hibah: Updating final R markdown, testing lasso with logistic, slides
+
+Samantha: Lasso code, working with professor, slides
