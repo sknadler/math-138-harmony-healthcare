@@ -7,18 +7,11 @@ As their final project for Math 138 in the Spring of 2025, the students served a
 
 ---
 
-## Data Processing and Visualization
+### Data Processing and Visualization
 #### Daniel Doyon, Eddie Grant, Bartolomeo Zaino
-(data processing and visualization)
 
----
-
-## Feature Selection
+### Feature Selection
 #### Hibah Arshad, Samantha Nadler, Thomas Walsh
-(feature selection)
 
----
-
-## Model Validation
+### Model Validation
 #### Jamari D'Aguilar, Justine Prasad
-(model validation)
